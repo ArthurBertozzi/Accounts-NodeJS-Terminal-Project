@@ -21,6 +21,7 @@ function operation() {
             'Consultar Saldo',
             'Depositar',
             'Sacar',
+            'Transferencia',
             'Sair'
             ]
         },
@@ -38,6 +39,8 @@ function operation() {
             deposit()      
         } else if (action === 'Sacar') {
             widthdraw()
+        } else if (action === 'Transferencia') {
+            transfer()
         } else if (action === 'Sair') {
             console.log(chalk.bgBlue.black.bold('Obrigado por usar o Accounts'))
             process.exit()
@@ -255,4 +258,63 @@ function removeAmount(accountName, amount) {
     console.log(chalk.green(`Saque de R$${amount} realizado com sucesso.`))
 
     operation()
+}
+
+// função de transferência
+function transfer() {
+    
+    inquirer.prompt([{
+        name: 'conta1',
+        message: 'Qual a conta de origem?'
+        },
+        {name: 'conta2',
+        message: 'Qual a conta de destino?'
+        }
+    ])
+    .then((answers) => {
+        if(!checkAccount(answers.conta1) || !checkAccount(answers.conta2)) {
+            console.log(chalk.bgRed.black.bold('Contas não cadastradas, tente novamente.'))
+            return transfer()
+        }
+        const conta1 = answers.conta1
+        const conta2 = answers.conta2
+
+        inquirer.prompt([{
+            name: 'amount',
+            message: 'Digite a quantidade que deseja transferir.'
+        }])
+        .then((answer) => {
+            const amount = answer['amount']
+            // função de adicionar o saldo na conta destino e retirar na conta origem
+            transferamount(conta1, conta2, amount)
+        })
+        .catch(err => console.log(err))
+    })
+    .catch(err => console.log(err))
+}
+
+function transferamount(conta1, conta2, amount) {
+    if(!amount) {
+        console.log(chalk.bgRed.black('Ocorreu um erro, tente novamente mais tarde'),)
+        return transfer()
+    }
+    const conta1Data = getAccount(conta1)
+    const conta2Data = getAccount(conta2)
+
+    if (conta1Data.balance < amount) {
+        console.log(chalk.bgRed.black.bold('Valor indisponível'))
+        return transfer()
+    }
+
+    conta1Data.balance = parseFloat(conta1Data.balance) - parseFloat(amount)
+    conta2Data.balance = parseFloat(conta2Data.balance) + parseFloat(amount)
+
+    fs.writeFileSync(`accounts/${conta1}.json`, JSON.stringify(conta1Data), function(err) {console.log(err)})
+    fs.writeFileSync(`accounts/${conta2}.json`, JSON.stringify(conta2Data), function(err) {console.log(err)})
+
+    console.log(chalk.green(`Transferencia de R$${amount} realizado com sucesso.\nConta origem ${conta1}\nConta destino: ${conta2}`))
+
+    operation()
+
+
 }
